@@ -28,9 +28,9 @@ export function Layout() {
       <aside className="hidden md:flex fixed left-0 top-0 bottom-0 w-72 bg-slate-900 border-r border-white/5 flex-col p-8 z-50 shadow-2xl">
         <div className="flex items-center gap-3 mb-12 px-2">
           <div className="w-10 h-10 bg-gradient-to-br from-red-600 to-rose-700 rounded-xl flex items-center justify-center shadow-lg shadow-red-900/40">
-            <span className="text-white font-black italic">B</span>
+            <span className="text-white font-black italic">C</span>
           </div>
-          <h1 className="text-2xl font-black tracking-tighter text-white uppercase">BHVR</h1>
+          <h1 className="text-xl font-black tracking-tighter text-white uppercase leading-tight">Conquerors<br/>Lobby</h1>
         </div>
 
         <nav className="flex flex-col gap-2 flex-1">

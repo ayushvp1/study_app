@@ -7,7 +7,7 @@ import { jwt } from "hono/jwt";
 const JWT_SECRET = "super-secret-key";
 
 const stats = new Hono()
-  .use("/*", jwt({ secret: JWT_SECRET }))
+  .use("/*", jwt({ secret: JWT_SECRET, alg: "HS256" }))
   .get("/summary", async (c) => {
     const payload = c.get("jwtPayload") as any;
     const userId = payload.id;
@@ -26,10 +26,10 @@ const stats = new Hono()
     const last7Days = Array.from({ length: 7 }).map((_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      return d.toISOString().split('T')[0];
+      return d.toISOString().slice(0, 10);
     }).reverse();
 
-    const activity = last7Days.map(day => ({
+    const activity = last7Days.map((day) => ({
       day: day.split('-').slice(1).join('/'), // MM/DD format
       count: userAttempts.filter(a => a.attemptedAt.startsWith(day)).length
     }));
@@ -37,7 +37,7 @@ const stats = new Hono()
     // 4. Mastery (simple logic for now)
     const mastery = correct * 10;
 
-    // 5. Streak (simplified: consecutive days with attempts)
+    // 5. Streak (consecutive days with attempts)
     let streak = 0;
     const attemptDates = new Set(userAttempts.map(a => a.attemptedAt.split('T')[0]));
     let checkDate = new Date();
@@ -46,12 +46,28 @@ const stats = new Hono()
       checkDate.setDate(checkDate.getDate() - 1);
     }
 
+    // 6. Recent Attempts with Question Text
+    const recentAttempts = await db.query.attempts.findMany({
+      where: eq(attempts.userId, userId),
+      orderBy: (attempts, { desc }) => [desc(attempts.attemptedAt)],
+      limit: 5,
+      with: {
+        question: true
+      }
+    });
+
     return c.json({
       streak: `${streak} Days`,
       mastery: mastery.toString(),
       totalQuizzes: [...new Set(userAttempts.map(a => a.questionId))].length.toString(),
       accuracy: `${accuracy.toFixed(1)}%`,
-      activity
+      activity,
+      recentAttempts: recentAttempts.map(a => ({
+        id: a.id,
+        questionText: a.question?.text || "Unknown Question",
+        isCorrect: a.isCorrect,
+        attemptedAt: a.attemptedAt
+      }))
     });
   });
 

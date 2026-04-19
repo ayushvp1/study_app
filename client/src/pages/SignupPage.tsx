@@ -35,7 +35,7 @@ export function SignupPage() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-          <CardTitle className="bg-gradient-to-r from-red-600 to-rose-700 bg-clip-text text-transparent leading-normal">Join Us</CardTitle>
+          <CardTitle className="bg-gradient-to-r from-red-600 to-rose-700 bg-clip-text text-transparent leading-normal">Join Conquerors Lobby</CardTitle>
           <CardDescription>Create your account and start your learning journey today.</CardDescription>
         </CardHeader>
         <form onSubmit={handleSignup} id="signup-form" name="signup">

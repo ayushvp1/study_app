@@ -49,7 +49,7 @@ export function LoginPage() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader>
-          <CardTitle className="bg-gradient-to-r from-red-600 to-rose-700 bg-clip-text text-transparent">BHVR</CardTitle>
+          <CardTitle className="bg-gradient-to-r from-red-600 to-rose-700 bg-clip-text text-transparent">Conquerors Lobby</CardTitle>
           <CardDescription>Master your craft. Login to access your practice modules.</CardDescription>
         </CardHeader>
         <form onSubmit={handleLogin}>

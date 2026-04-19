@@ -1,16 +1,17 @@
 import { Hono } from "hono";
 import { db } from "../db";
-import { questions, users } from "../db/schema";
+import { questions, users, modules } from "../db/schema";
 import { nanoid } from "nanoid";
 import { eq } from "drizzle-orm";
 import OpenAI from "openai";
 import { jwt } from "hono/jwt";
 
 const JWT_SECRET = "super-secret-key";
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "literouter";
 
 const openai = new OpenAI({
-  apiKey: OPENAI_API_KEY || "missing-openai-key",
+  apiKey: OPENAI_API_KEY,
+  baseURL: process.env.AI_BASE_URL || "https://api.literouter.com/v1",
 });
 
 type GeneratedQuestion = {
@@ -119,8 +120,8 @@ Rules:
     }
 
     const parsed = JSON.parse(content);
-    const questions = Array.isArray(parsed?.questions) ? parsed.questions : [parsed];
-    return questions.map((question, index) => normalizeQuestion(question, index, type, topic));
+    const questionsArr = Array.isArray(parsed?.questions) ? parsed.questions : [parsed];
+    return questionsArr.map((question: any, index: number) => normalizeQuestion(question, index, type, topic));
   } catch (error) {
     console.error("AI generation failed, using fallback questions instead:", error);
     return buildFallbackQuestions(topic, type, count);
@@ -129,7 +130,7 @@ Rules:
 
 const admin = new Hono()
   // Protect all admin routes
-  .use("/*", jwt({ secret: JWT_SECRET }))
+  .use("/*", jwt({ secret: JWT_SECRET, alg: "HS256" }))
   .use("/*", async (c, next) => {
     const payload = c.get("jwtPayload") as any;
     if (payload.role !== "admin") return c.json({ error: "Forbidden" }, 403);
@@ -146,6 +147,15 @@ const admin = new Hono()
         return c.json({ error: "Topic is required" }, 400);
       }
 
+      // 1. Ensure Module exists or create it
+      const moduleId = nanoid();
+      await db.insert(modules).values({
+        id: moduleId,
+        title: safeTopic,
+        content: `AI Generated module for ${safeTopic}`,
+        createdAt: new Date().toISOString(),
+      });
+
       const generatedQuestions = await generateQuestions(safeTopic, safeType, safeCount);
       const newQuestions = generatedQuestions.map((question) => ({
         id: nanoid(),
@@ -155,7 +165,7 @@ const admin = new Hono()
         correctAnswer: question.correctAnswer,
         explanation: question.explanation || null,
         status: "draft" as const,
-        moduleId: safeTopic,
+        moduleId: moduleId,
         createdAt: new Date().toISOString(),
       }));
 
@@ -168,6 +178,43 @@ const admin = new Hono()
     } catch (error) {
       console.error("Failed to generate admin questions:", error);
       return c.json({ error: "Question generation failed" }, 500);
+    }
+  })
+  .post("/manual", async (c) => {
+    try {
+      const { title, content, questions: qList } = await c.req.json();
+      
+      if (!title) return c.json({ error: "Title is required" }, 400);
+
+      // 1. Create Module
+      const moduleId = nanoid();
+      await db.insert(modules).values({
+        id: moduleId,
+        title,
+        content: content || null,
+        createdAt: new Date().toISOString(),
+      });
+
+      // 2. Add Questions
+      if (Array.isArray(qList) && qList.length > 0) {
+        const questionEntries = qList.map((q: any) => ({
+          id: nanoid(),
+          type: q.type || "type1",
+          text: q.text,
+          options: q.options ? JSON.stringify(q.options) : null,
+          correctAnswer: q.correctAnswer,
+          explanation: q.explanation || null,
+          status: "published" as const,
+          moduleId: moduleId,
+          createdAt: new Date().toISOString(),
+        }));
+        await db.insert(questions).values(questionEntries);
+      }
+
+      return c.json({ success: true, moduleId });
+    } catch (error) {
+      console.error("Failed to manually add module:", error);
+      return c.json({ error: "Failed to save module" }, 500);
     }
   })
   .post("/publish/:id", async (c) => {
@@ -188,6 +235,66 @@ const admin = new Hono()
   .delete("/users/:id", async (c) => {
     const id = c.req.param("id");
     await db.delete(users).where(eq(users.id, id));
+    return c.json({ success: true });
+  })
+  .get("/modules", async (c) => {
+    const allModules = await db.query.modules.findMany({
+      orderBy: (modules, { desc }) => [desc(modules.createdAt)],
+    });
+    return c.json(allModules);
+  })
+  .get("/modules/:id", async (c) => {
+    const id = c.req.param("id");
+    const moduleData = await db.query.modules.findFirst({
+      where: eq(modules.id, id),
+      with: {
+        questions: true
+      }
+    });
+    if (!moduleData) return c.json({ error: "Module not found" }, 404);
+    return c.json(moduleData);
+  })
+  .patch("/modules/:id", async (c) => {
+    try {
+      const id = c.req.param("id");
+      const { title, content, questions: qList } = await c.req.json();
+      
+      // 1. Update Module
+      await db.update(modules).set({
+        title,
+        content: content || null
+      }).where(eq(modules.id, id));
+
+      // 2. Replace Questions
+      // First delete old ones
+      await db.delete(questions).where(eq(questions.moduleId, id));
+      
+      // Then insert new ones
+      if (Array.isArray(qList) && qList.length > 0) {
+        const questionEntries = qList.map((q: any) => ({
+          id: nanoid(),
+          type: q.type || "type1",
+          text: q.text,
+          options: q.options ? (typeof q.options === 'string' ? q.options : JSON.stringify(q.options)) : null,
+          correctAnswer: q.correctAnswer,
+          explanation: q.explanation || null,
+          status: "published" as const,
+          moduleId: id,
+          createdAt: new Date().toISOString(),
+        }));
+        await db.insert(questions).values(questionEntries);
+      }
+
+      return c.json({ success: true });
+    } catch (error) {
+      console.error("Failed to update module:", error);
+      return c.json({ error: "Failed to update module" }, 500);
+    }
+  })
+  .delete("/modules/:id", async (c) => {
+    const id = c.req.param("id");
+    await db.delete(questions).where(eq(questions.moduleId, id));
+    await db.delete(modules).where(eq(modules.id, id));
     return c.json({ success: true });
   });
 

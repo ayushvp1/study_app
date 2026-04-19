@@ -59,6 +59,13 @@ export const Input = ({ className = "", ...props }: any) => (
   />
 );
 
+export const Textarea = ({ className = "", ...props }: any) => (
+  <textarea 
+    {...props} 
+    className={`w-full px-4 py-3 bg-slate-800/50 border border-white/10 rounded-xl focus:ring-4 focus:ring-red-500/20 focus:border-red-500 outline-none transition-all placeholder:text-slate-500 font-medium text-white shadow-inner min-h-[120px] ${className}`} 
+  />
+);
+
 export const Label = ({ children, htmlFor, className = "" }: any) => (
   <label 
     htmlFor={htmlFor} 

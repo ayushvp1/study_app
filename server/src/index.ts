@@ -5,6 +5,8 @@ import auth from "./routes/auth";
 import admin from "./routes/admin";
 import stats from "./routes/stats";
 import { db } from "./db";
+import { attempts } from "./db/schema";
+import { nanoid } from "nanoid";
 
 const JWT_SECRET = "super-secret-key";
 
@@ -19,61 +21,77 @@ function parseQuestionOptions(options: string | null): string[] {
   }
 }
 
-const app = new Hono()
-  .use(cors())
-  .basePath("/api")
-  .route("/auth", auth)
-  .route("/admin", admin)
-  .route("/stats", stats)
-  .use("/questions", jwt({ secret: JWT_SECRET }))
-  .get("/questions", async (c) => {
-    const allQuestions = await db.query.questions.findMany({
-      orderBy: (questions, { desc }) => [desc(questions.createdAt)],
-    });
+import { serveStatic } from "hono/bun";
 
-    const groupedTopics = allQuestions.reduce<Record<string, {
-      topic: string;
-      totalQuestions: number;
-      latestCreatedAt: string;
-      questions: Array<{
-        id: string;
-        type: string;
-        text: string;
-        options: string[];
-        correctAnswer: string;
-        explanation: string | null;
-        status: string;
-        createdAt: string;
-      }>;
-    }>>((acc, question) => {
-      const topic = question.moduleId || "General Practice";
-      if (!acc[topic]) {
-        acc[topic] = {
-          topic,
-          totalQuestions: 0,
-          latestCreatedAt: question.createdAt,
-          questions: [],
-        };
-      }
+const app = new Hono();
 
-      acc[topic].totalQuestions += 1;
-      acc[topic].questions.push({
-        id: question.id,
-        type: question.type,
-        text: question.text,
-        options: parseQuestionOptions(question.options),
-        correctAnswer: question.correctAnswer,
-        explanation: question.explanation,
-        status: question.status,
-        createdAt: question.createdAt,
-      });
-      return acc;
-    }, {});
+app.use(cors());
 
-    return c.json({
-      topics: Object.values(groupedTopics),
-    });
+// API Routes
+app.route("/api/auth", auth);
+app.route("/api/admin", admin);
+app.route("/api/stats", stats);
+
+app.get("/api/questions", jwt({ secret: JWT_SECRET, alg: "HS256" }), async (c) => {
+  const allModules = await db.query.modules.findMany({
+    with: {
+      questions: true,
+    },
+    orderBy: (modules, { desc }) => [desc(modules.createdAt)],
   });
+
+  const topics = allModules.map((mod) => ({
+    id: mod.id,
+    topic: mod.title,
+    content: mod.content,
+    totalQuestions: mod.questions.length,
+    latestCreatedAt: mod.createdAt,
+    questions: mod.questions.map((q) => ({
+      id: q.id,
+      type: q.type,
+      text: q.text,
+      options: parseQuestionOptions(q.options),
+      correctAnswer: q.correctAnswer,
+      explanation: q.explanation,
+      status: q.status,
+      createdAt: q.createdAt,
+    })),
+  }));
+
+  return c.json({
+    topics,
+  });
+});
+
+app.post("/api/questions/attempt", jwt({ secret: JWT_SECRET, alg: "HS256" }), async (c) => {
+  try {
+    const payload = c.get("jwtPayload") as any;
+    const userId = payload.id;
+    const { questionId, answer, isCorrect } = await c.req.json();
+
+    if (!questionId || answer === undefined) {
+      return c.json({ error: "Missing required fields" }, 400);
+    }
+
+    await db.insert(attempts).values({
+      id: nanoid(),
+      userId,
+      questionId,
+      answer: String(answer),
+      isCorrect: Boolean(isCorrect),
+      attemptedAt: new Date().toISOString(),
+    });
+
+    return c.json({ success: true });
+  } catch (error: any) {
+    console.error("Attempt recording failed:", error);
+    return c.json({ error: error.message || "Failed to record attempt" }, 500);
+  }
+});
+
+// Serve static files from the client build
+app.use("/*", serveStatic({ root: "../client/dist" }));
+app.get("*", serveStatic({ path: "../client/dist/index.html" }));
 
 export type AppType = typeof app;
 export default app;
