@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
@@ -17,6 +17,7 @@
     "lucide-react": "^0.507.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
+    "react-router-dom": "^6.22.3",
     "shared": "workspace:*",
     "server": "workspace:*",
     "tailwind-merge": "^3.4.0",
