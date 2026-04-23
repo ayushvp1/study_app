@@ -49,10 +49,10 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route element={<Layout />}>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/practice" element={<PracticePage />} />
-          <Route path="/admin" element={user?.role === "admin" ? <AdminPage /> : <Navigate to="/" />} />
-          <Route path="/profile" element={<Profile />} />
+          <Route path="/" element={user ? <DashboardPage /> : <Navigate to="/login" />} />
+          <Route path="/practice" element={user ? <PracticePage /> : <Navigate to="/login" />} />
+          <Route path="/admin" element={user?.role === "admin" ? <AdminPage /> : <Navigate to="/login" />} />
+          <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
         </Route>
         <Route element={<AuthLayout />}>
           <Route path="/login" element={!user ? <LoginPage /> : <Navigate to="/" />} />
