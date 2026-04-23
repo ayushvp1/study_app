@@ -10,5 +10,6 @@ services:
     environment:
       - NODE_ENV=production
       - JWT_SECRET=conquerors-lobby-secret-777
-      - OPENAI_API_KEY=literouter
+      - OPENAI_API_KEY=d6a17b6c4c9744aa2a72fd8ccb3bcc442d50a95ecaab47bc2786988c25e5ceaf
+      - AI_BASE_URL=https://api.literouter.com/v1
     restart: always

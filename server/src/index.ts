@@ -93,5 +93,17 @@ app.post("/api/questions/attempt", jwt({ secret: JWT_SECRET, alg: "HS256" }), as
 app.use("/*", serveStatic({ root: "../client/dist" }));
 app.get("*", serveStatic({ path: "../client/dist/index.html" }));
 
+const port = Number(process.env.PORT) || 3000;
+
 export type AppType = typeof app;
-export default app;
+
+// Use Bun.serve for explicit 0.0.0.0 listening
+export default {
+  port,
+  hostname: "0.0.0.0",
+  fetch: app.fetch,
+} as {
+  port: number;
+  hostname: string;
+  fetch: typeof app.fetch;
+} & typeof app;
