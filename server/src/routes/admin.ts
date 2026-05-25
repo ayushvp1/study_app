@@ -228,8 +228,8 @@ const admin = new Hono()
   })
   .patch("/users/:id", async (c) => {
     const id = c.req.param("id");
-    const { name, role } = await c.req.json();
-    await db.update(users).set({ name, role }).where(eq(users.id, id));
+    const { name, role, phone } = await c.req.json();
+    await db.update(users).set({ name, role, phone }).where(eq(users.id, id));
     return c.json({ success: true });
   })
   .delete("/users/:id", async (c) => {

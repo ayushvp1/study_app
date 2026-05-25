@@ -1,8 +1,9 @@
 import { hc } from "hono/client";
 import type { AppType } from "server/src/index";
 
-const isDev = import.meta.env.DEV;
-const SERVER_URL = import.meta.env.VITE_SERVER_URL || (isDev ? "http://localhost:3000" : window.location.origin);
+const SERVER_URL =
+  import.meta.env.VITE_SERVER_URL ||
+  (import.meta.env.DEV ? "http://localhost:3000" : window.location.origin);
 
 export const getAuthToken = () => localStorage.getItem("auth_token");
 export const setAuthToken = (token: string) => localStorage.setItem("auth_token", token);

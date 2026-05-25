@@ -15,6 +15,7 @@ import { BookOpen, ChevronDown, Sparkles } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import { PracticePage } from "./pages/PracticePage";
+import { MessengerPage } from "./pages/MessengerPage";
 
 const Profile = () => {
   const { user, logout } = useAuth();
@@ -51,6 +52,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path="/" element={user ? <DashboardPage /> : <Navigate to="/login" />} />
           <Route path="/practice" element={user ? <PracticePage /> : <Navigate to="/login" />} />
+          <Route path="/messenger" element={user ? <MessengerPage /> : <Navigate to="/login" />} />
           <Route path="/admin" element={user?.role === "admin" ? <AdminPage /> : <Navigate to="/login" />} />
           <Route path="/profile" element={user ? <Profile /> : <Navigate to="/login" />} />
         </Route>

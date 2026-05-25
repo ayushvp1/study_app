@@ -104,7 +104,7 @@ export function AdminPage() {
     try {
       const res = await client.api.admin.users[":id"].$patch({ 
         param: { id: editingUser.id },
-        json: { name: editingUser.name, role: editingUser.role }
+        json: { name: editingUser.name, role: editingUser.role, phone: editingUser.phone }
       });
       if (res.ok) {
         setEditingUser(null);
@@ -456,6 +456,7 @@ export function AdminPage() {
                 <thead>
                   <tr className="border-b border-white/5">
                     <th className="pb-4 font-black text-xs uppercase tracking-widest text-slate-500 px-4">Name</th>
+                    <th className="pb-4 font-black text-xs uppercase tracking-widest text-slate-500 px-4">Contact</th>
                     <th className="pb-4 font-black text-xs uppercase tracking-widest text-slate-500 px-4">Email</th>
                     <th className="pb-4 font-black text-xs uppercase tracking-widest text-slate-500 px-4">Role</th>
                     <th className="pb-4 font-black text-xs uppercase tracking-widest text-slate-500 text-right px-4">Actions</th>
@@ -470,9 +471,23 @@ export function AdminPage() {
                             value={editingUser.name} 
                             onChange={(e: any) => setEditingUser({...editingUser, name: e.target.value})} 
                             className="h-10 w-40" 
+                            onKeyDown={(e: any) => e.key === "Enter" && handleUpdateUser()}
                           />
                         ) : (
                           <span className="font-bold text-slate-200">{user.name}</span>
+                        )}
+                      </td>
+                      <td className="py-4 px-4">
+                        {editingUser?.id === user.id ? (
+                          <Input 
+                            value={editingUser.phone || ""} 
+                            onChange={(e: any) => setEditingUser({...editingUser, phone: e.target.value})} 
+                            className="h-10 w-40" 
+                            placeholder="Phone number"
+                            onKeyDown={(e: any) => e.key === "Enter" && handleUpdateUser()}
+                          />
+                        ) : (
+                          <span className="font-bold text-emerald-500">{user.phone || "No Phone"}</span>
                         )}
                       </td>
                       <td className="py-4 px-4 text-slate-500 font-medium">{user.email}</td>
@@ -511,14 +526,22 @@ export function AdminPage() {
                               </button>
                             </>
                           ) : (
-                            <>
-                              <button onClick={() => setEditingUser(user)} className="p-2 text-slate-500 hover:text-red-500 transition-all active:scale-90">
-                                <Edit2 size={18} />
-                              </button>
-                              <button onClick={() => handleDeleteUser(user.id)} className="p-2 text-slate-500 hover:text-red-500 transition-all active:scale-90">
-                                <Trash2 size={18} />
-                              </button>
-                            </>
+                             <>
+                               <button 
+                                 onClick={() => setEditingUser(user)} 
+                                 className="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-800 text-slate-400 hover:bg-red-600/10 hover:text-red-500 transition-all border border-white/5 active:scale-95"
+                                 title="Edit Student"
+                               >
+                                 <Edit2 size={18} />
+                               </button>
+                               <button 
+                                 onClick={() => handleDeleteUser(user.id)} 
+                                 className="h-10 w-10 flex items-center justify-center rounded-xl bg-slate-800 text-slate-400 hover:bg-red-600/10 hover:text-red-500 transition-all border border-white/5 active:scale-95"
+                                 title="Delete Student"
+                               >
+                                 <Trash2 size={18} />
+                               </button>
+                             </>
                           )}
                         </div>
                       </td>

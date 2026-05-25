@@ -17,7 +17,7 @@ export const Button = ({ children, className = "", ...props }: any) => {
 };
 
 export const Card = ({ children, className = "" }: any) => (
-  <div className={`bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl ${className}`}>
+  <div className={`bg-slate-900/95 border border-white/10 rounded-2xl shadow-2xl ${className}`}>
     {children}
   </div>
 );

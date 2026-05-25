@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
-import { Home, BookOpen, User, ShieldCheck, LogOut } from "lucide-react";
+import { Home, BookOpen, User, ShieldCheck, LogOut, MessageSquare } from "lucide-react";
 import { useAuth } from "../lib/auth-context";
 
 export function Layout() {
@@ -36,6 +36,7 @@ export function Layout() {
         <nav className="flex flex-col gap-2 flex-1">
           <NavLink to="/" icon={<Home size={22} />} label="Dashboard" active={location.pathname === "/"} />
           <NavLink to="/practice" icon={<BookOpen size={22} />} label="Practice" active={location.pathname === "/practice"} />
+          <NavLink to="/messenger" icon={<MessageSquare size={22} />} label="Messenger" active={location.pathname === "/messenger"} />
           {isAdmin && <NavLink to="/admin" icon={<ShieldCheck size={22} />} label="Forge" active={location.pathname === "/admin"} />}
           <NavLink to="/profile" icon={<User size={22} />} label="Account" active={location.pathname === "/profile"} />
         </nav>
@@ -53,6 +54,7 @@ export function Layout() {
       <nav className="md:hidden fixed bottom-6 left-6 right-6 h-20 bg-slate-900/80 backdrop-blur-2xl border border-white/10 rounded-2xl flex items-center justify-around px-6 shadow-2xl z-50">
         <MobileNavLink to="/" icon={<Home size={24} />} active={location.pathname === "/"} />
         <MobileNavLink to="/practice" icon={<BookOpen size={24} />} active={location.pathname === "/practice"} />
+        <MobileNavLink to="/messenger" icon={<MessageSquare size={24} />} active={location.pathname === "/messenger"} />
         {isAdmin && <MobileNavLink to="/admin" icon={<ShieldCheck size={24} />} active={location.pathname === "/admin"} />}
         <button onClick={handleLogout} className="p-3 text-slate-500 hover:text-red-500 transition-all active:scale-90">
           <LogOut size={24} />

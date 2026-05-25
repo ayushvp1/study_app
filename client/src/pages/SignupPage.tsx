@@ -9,6 +9,7 @@ export function SignupPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -17,7 +18,7 @@ export function SignupPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await client.api.auth.register.$post({ json: { email, password, name } });
+      const res = await client.api.auth.register.$post({ json: { email, password, name, phone } });
       if (res.ok) {
         navigate("/login", { state: { message: "Account created! Please login." } });
       } else {
@@ -54,6 +55,18 @@ export function SignupPage() {
                   placeholder="John Doe" 
                   value={name} 
                   onChange={(e: any) => setName(e.target.value)} 
+                  required 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="signup-phone">Phone Number (WhatsApp)</Label>
+                <Input 
+                  id="signup-phone"
+                  name="phone"
+                  type="tel"
+                  placeholder="+1 234 567 8900" 
+                  value={phone} 
+                  onChange={(e: any) => setPhone(e.target.value)} 
                   required 
                 />
               </div>

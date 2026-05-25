@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { db } from "../db";
-import { attempts } from "../db/schema";
+import { attempts, recitations } from "../db/schema";
 import { eq, and, gte, sql } from "drizzle-orm";
 import { jwt } from "hono/jwt";
 
@@ -17,12 +17,17 @@ const stats = new Hono()
       where: eq(attempts.userId, userId),
     });
 
-    // 2. Calculate Stats
+    // 2. Get all recitations for user
+    const userRecitations = await db.query.recitations.findMany({
+      where: eq(recitations.userId, userId),
+    });
+
+    // 3. Calculate Stats
     const total = userAttempts.length;
     const correct = userAttempts.filter(a => a.isCorrect).length;
     const accuracy = total > 0 ? (correct / total) * 100 : 0;
     
-    // 3. Activity for last 7 days
+    // 4. Activity for last 7 days
     const last7Days = Array.from({ length: 7 }).map((_, i) => {
       const d = new Date();
       d.setDate(d.getDate() - i);
@@ -34,10 +39,10 @@ const stats = new Hono()
       count: userAttempts.filter(a => a.attemptedAt.startsWith(day)).length
     }));
 
-    // 4. Mastery (simple logic for now)
+    // 5. Mastery (simple logic for now)
     const mastery = correct * 10;
 
-    // 5. Streak (consecutive days with attempts)
+    // 6. Streak (consecutive days with attempts)
     let streak = 0;
     const attemptDates = new Set(userAttempts.map(a => a.attemptedAt.split('T')[0]));
     let checkDate = new Date();
@@ -46,7 +51,7 @@ const stats = new Hono()
       checkDate.setDate(checkDate.getDate() - 1);
     }
 
-    // 6. Recent Attempts with Question Text
+    // 7. Recent Attempts with Question Text
     const recentAttempts = await db.query.attempts.findMany({
       where: eq(attempts.userId, userId),
       orderBy: (attempts, { desc }) => [desc(attempts.attemptedAt)],
@@ -67,6 +72,10 @@ const stats = new Hono()
         questionText: a.question?.text || "Unknown Question",
         isCorrect: a.isCorrect,
         attemptedAt: a.attemptedAt
+      })),
+      recitations: userRecitations.map(r => ({
+        tableNumber: r.tableNumber,
+        count: r.count
       }))
     });
   });
